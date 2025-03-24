@@ -1,6 +1,7 @@
 """fl-evite-plus: A Flower / sklearn app."""
 
 import warnings
+import random
 
 from sklearn.metrics import log_loss
 
@@ -13,7 +14,7 @@ from fl_evite_plus.task import (
     set_initial_params,
     set_model_params,
 )
-
+from fl_evite_plus.comm_cost import energy_comm_cost  # Import the cost function
 
 class FlowerClient(NumPyClient):
     def __init__(self, model, X_train, X_test, y_train, y_test):
@@ -31,7 +32,21 @@ class FlowerClient(NumPyClient):
             warnings.simplefilter("ignore")
             self.model.fit(self.X_train, self.y_train)
 
-        return get_model_params(self.model), len(self.X_train), {}
+        new_params = get_model_params(self.model)
+        
+        # Retrieve communication parameters from config with defaults as fallback.
+        energy_per_bit = config.get("communication_energy_per_bit", 0.0001)
+        distance_min = config.get("communication_distance_min", 5)
+        distance_max = config.get("communication_distance_max", 20)
+        
+        # Choose a random distance within the provided range.
+        distance = random.uniform(distance_min, distance_max)
+        
+        # Calculate communication cost using the energy * (distance^2) model.
+        comm_cost = energy_comm_cost(new_params, energy_per_bit, distance)
+
+        # Return the new parameters and a metrics dict including cost and chosen distance.
+        return new_params, len(self.X_train), {"comm_cost": comm_cost, "distance": distance}
 
     def evaluate(self, parameters, config):
         set_model_params(self.model, parameters)

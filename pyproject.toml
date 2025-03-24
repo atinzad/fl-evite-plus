@@ -27,9 +27,12 @@ clientapp = "fl_evite_plus.client_app:app"
 num-server-rounds = 3
 penalty = "l2"
 local-epochs = 1
+communication_energy_per_bit = 0.0001  # Energy per bit (adjustable)
+communication_distance_min = 5         # Minimum communication distance (adjustable)
+communication_distance_max = 20        # Maximum communication distance (adjustable)
 
 [tool.flwr.federations]
 default = "local-simulation"
 
 [tool.flwr.federations.local-simulation]
-options.num-supernodes = 10
+options.num-supernodes = 100
