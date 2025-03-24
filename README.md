@@ -1,32 +1,124 @@
-# fl-evite-plus: A Flower / sklearn app
+# fl-evite-plus: A Flower-based Federated Learning Simulation
 
-## Install dependencies and project
+`fl-evite-plus` is a federated learning application built using the [Flower](https://flower.ai/) framework and `scikit-learn`. It simulates federated training across multiple IoT-like client devices, incorporating customizable energy and communication models.
 
-```bash
-pip install -e .
+---
+
+## 📁 Project Structure
+
+```
+fl-evite-plus/
+├── README.md                   # Project documentation and instructions
+├── pyproject.toml              # Project dependencies and Flower configuration
+└── fl_evite_plus/              # Core application source code
+    ├── __init__.py             # Package initialization
+    ├── client_app.py           # Flower client logic (IoT device simulation)
+    ├── server_app.py           # Flower server logic (aggregator)
+    ├── task.py                 # Utilities: dataset loading, model handling
+    └── comm_cost.py            # Communication energy cost calculation
 ```
 
-## Run with the Simulation Engine
+---
 
-In the `fl-evite-plus` directory, use `flwr run` to run a local simulation:
+## 🚀 Setting Up the Project (First Time)
+
+1. **Clone the Repository**
+
+```bash
+git clone <repository-url>
+cd fl-evite-plus
+```
+
+2. **Install Dependencies (Using `uv` from Astral)**
+
+Ensure [`uv`](https://github.com/astral-sh/uv) is installed:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Install project dependencies:
+
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e .
+```
+
+---
+
+## 🖥️ Running the Simulation
+
+Run the federated learning simulation locally:
 
 ```bash
 flwr run .
 ```
 
-Refer to the [How to Run Simulations](https://flower.ai/docs/framework/how-to-run-simulations.html) guide in the documentation for advice on how to optimize your simulations.
+### How to Read Output
 
-## Run with the Deployment Engine
+The command output will include:
 
-Follow this [how-to guide](https://flower.ai/docs/framework/how-to-run-flower-with-deployment-engine.html) to run the same app in this example but with Flower's Deployment Engine. After that, you might be interested in setting up [secure TLS-enabled communications](https://flower.ai/docs/framework/how-to-enable-tls-connections.html) and [SuperNode authentication](https://flower.ai/docs/framework/how-to-authenticate-supernodes.html) in your federation.
+- **Round number and state**:
+  - `[ROUND X]`: Indicates training round number.
+  - `aggregate_fit`: Reports the number of clients successfully aggregated.
+  - `aggregate_evaluate`: Evaluation results aggregation.
 
-You can run Flower on Docker too! Check out the [Flower with Docker](https://flower.ai/docs/framework/docker/index.html) documentation.
+- **Metrics**:
+  - **Loss**: Training loss per round.
+  - **Communication Energy**: Energy consumed per round (Joules), logged as `round_total_energy`.
+  
+Example output:
+```
+[ROUND 1]
+aggregate_fit: received 80 results and 2 failures
+aggregate_evaluate: received 98 results and 2 failures
+fit_metrics: {'round_total_energy': 1.25}
+```
 
-## Resources
+---
 
-- Flower website: [flower.ai](https://flower.ai/)
-- Check the documentation: [flower.ai/docs](https://flower.ai/docs/)
-- Give Flower a ⭐️ on GitHub: [GitHub](https://github.com/adap/flower)
-- Join the Flower community!
-  - [Flower Slack](https://flower.ai/join-slack/)
-  - [Flower Discuss](https://discuss.flower.ai/)
+## ⚙️ Configuring Simulation Parameters (`pyproject.toml`)
+
+Adjust simulation parameters in `pyproject.toml` under `[tool.flwr.app.config]`:
+
+| Parameter                      | Type    | Unit                  | Description |
+|--------------------------------|---------|-----------------------|-------------|
+| `num-server-rounds`            | Integer | Count (unitless)      | Number of training rounds to perform |
+| `penalty`                      | String  | Unitless              | Regularization for logistic regression (`"l1"` or `"l2"`) |
+| `local-epochs`                 | Integer | Count (unitless)      | Epochs each client trains locally per round |
+| `communication_energy_per_bit` | Float   | Joules per bit (J/bit)| Energy consumption per transmitted bit |
+| `communication_distance_min`   | Float   | Meters (m)            | Min. distance client-to-server |
+| `communication_distance_max`   | Float   | Meters (m)            | Max. distance client-to-server |
+| `communication_error_rate`     | Float   | Probability (unitless)| Chance a client's communication fails |
+| `fraction_fit`                 | Float   | Probability (unitless)| Fraction of clients selected for training per round |
+| `fraction_evaluate`            | Float   | Probability (unitless)| Fraction of clients selected for evaluation per round |
+
+---
+
+## 🛠️ Example Configuration
+
+```toml
+[tool.flwr.app.config]
+num-server-rounds = 5
+penalty = "l2"
+local-epochs = 2
+communication_energy_per_bit = 0.0002
+communication_distance_min = 10
+communication_distance_max = 30
+communication_error_rate = 0.05
+fraction_fit = 0.7
+fraction_evaluate = 0.9
+```
+
+---
+
+## 📝 Additional Resources
+
+- [Flower Documentation](https://flower.ai/docs)
+- [Astral UV Tool](https://github.com/astral-sh/uv)
+
+---
+
+Happy Federating! 🌼📡✨
+
