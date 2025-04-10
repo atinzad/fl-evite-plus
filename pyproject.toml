@@ -30,9 +30,11 @@ local-epochs = 1
 communication_energy_per_bit = 0.0001  # Energy per bit (adjustable)
 communication_distance_min = 5         # Minimum communication distance (adjustable)
 communication_distance_max = 20        # Maximum communication distance (adjustable)
-fraction_fit = 0.8                     # Fraction of clients to participate in training
+fraction_fit = 1.0                     # Fraction of clients to participate in training
 fraction_evaluate = 1.0                # Fraction of clients to participate in evaluation
-communication_error_rate = 0.1         # Probability of simulated communication failure (10%)
+communication_error_rate = 0.0         # Probability of simulated communication failure (10%)
+distance_file = "client_distances.csv"   # Path (relative or absolute)
+
 
 [tool.flwr.federations]
 default = "local-simulation"

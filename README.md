@@ -67,13 +67,13 @@ The command output will include:
 - **Metrics**:
   - **Loss**: Training loss per round.
   - **Communication Energy**: Energy consumed per round (Joules), logged as `round_total_energy`.
-  
+
 Example output:
 ```
 [ROUND 1]
-aggregate_fit: received 80 results and 2 failures
-aggregate_evaluate: received 98 results and 2 failures
-fit_metrics: {'round_total_energy': 1.25}
+aggregate_fit: received 80 results and 0 failures
+aggregate_evaluate: received 70 results and 0 failures
+fit_metrics: {'round_total_energy': 362149.63}
 ```
 
 ---
@@ -100,15 +100,15 @@ Adjust simulation parameters in `pyproject.toml` under `[tool.flwr.app.config]`:
 
 ```toml
 [tool.flwr.app.config]
-num-server-rounds = 5
+num-server-rounds = 3
 penalty = "l2"
-local-epochs = 2
-communication_energy_per_bit = 0.0002
-communication_distance_min = 10
-communication_distance_max = 30
-communication_error_rate = 0.05
-fraction_fit = 0.7
-fraction_evaluate = 0.9
+local-epochs = 1
+communication_energy_per_bit = 0.0001
+communication_distance_min = 5
+communication_distance_max = 20
+communication_error_rate = 0.1
+fraction_fit = 0.8
+fraction_evaluate = 0.7
 ```
 
 ---

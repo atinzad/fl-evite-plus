@@ -1,7 +1,9 @@
 """fl-evite-plus: A Flower / sklearn app."""
 
-import warnings
-import random
+
+import warnings, random, csv, os
+from pathlib import Path
+from functools import lru_cache
 
 from sklearn.metrics import log_loss
 
@@ -16,13 +18,25 @@ from fl_evite_plus.task import (
 )
 from fl_evite_plus.comm_cost import energy_comm_cost  # Our energy cost function
 
+#@lru_cache(maxsize=1)
+def _load_distance_map(csv_path: str):
+    print(f"csv_path {csv_path}")
+    mapping = {}
+    if csv_path and Path(csv_path).exists():
+        with open(csv_path, newline="") as fh:
+            for row in csv.DictReader(fh):
+                mapping[int(row["client_id"])] = float(row["distance_m"])
+    return mapping
+
+
 class FlowerClient(NumPyClient):
-    def __init__(self, model, X_train, X_test, y_train, y_test):
+    def __init__(self, model, X_train, X_test, y_train, y_test,cid):
         self.model = model
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
+        self.cid = cid
 
     def fit(self, parameters, config):
         set_model_params(self.model, parameters)
@@ -32,21 +46,33 @@ class FlowerClient(NumPyClient):
         if random.random() < error_rate:
             raise Exception("Simulated communication error in fit")
 
-        # Ignore convergence warnings due to low local epochs
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            self.model.fit(self.X_train, self.y_train)
 
         new_params = get_model_params(self.model)
         
         # Retrieve energy and distance parameters from config with defaults as fallback.
         energy_per_bit = config.get("communication_energy_per_bit", 0.0001)
-        distance_min = config.get("communication_distance_min", 5)
-        distance_max = config.get("communication_distance_max", 20)
-        # Choose a random distance within the provided range.
-        distance = random.uniform(distance_min, distance_max)
+
+        print("config.get(distance_file)",config.get("distance_file", ""))
+        distance_map = _load_distance_map(config.get("distance_file", ""))
+        print(f"distance map is {distance_map}")
+        print(f"config {config}")
+        distance = distance_map.get(self.cid)
+        print(f"distance {distance}")
+        if distance is None:   # fallback if ID not present
+            dmin = config.get("communication_distance_min", 5)
+            dmax = config.get("communication_distance_max", 20)
+            # Choose a random distance within the provided range.
+            distance = random.uniform(dmin, dmax)
+            print(f"distance format {distance}")
+        
+        
         # Calculate communication cost.
         comm_cost = energy_comm_cost(new_params, energy_per_bit, distance)
+
+        # Ignore convergence warnings due to low local epochs
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.model.fit(self.X_train, self.y_train)
 
         # Return the updated parameters and metrics including the communication cost and chosen distance.
         return new_params, len(self.X_train), {"comm_cost": comm_cost, "distance": distance}
@@ -66,10 +92,10 @@ class FlowerClient(NumPyClient):
 
 
 def client_fn(context: Context):
-    partition_id = context.node_config["partition-id"]
+    cid= context.node_config["partition-id"]
     num_partitions = context.node_config["num-partitions"]
 
-    X_train, X_test, y_train, y_test = load_data(partition_id, num_partitions)
+    X_train, X_test, y_train, y_test = load_data(cid, num_partitions)
 
     # Create LogisticRegression Model based on configuration parameters
     penalty = context.run_config["penalty"]
@@ -79,7 +105,7 @@ def client_fn(context: Context):
     # Initialize model parameters
     set_initial_params(model)
 
-    return FlowerClient(model, X_train, X_test, y_train, y_test).to_client()
+    return FlowerClient(model, X_train, X_test, y_train, y_test, cid).to_client()
 
 
 # Register Flower ClientApp
