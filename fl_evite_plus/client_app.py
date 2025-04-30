@@ -52,19 +52,14 @@ class FlowerClient(NumPyClient):
         # Retrieve energy and distance parameters from config with defaults as fallback.
         energy_per_bit = config.get("communication_energy_per_bit", 0.0001)
 
-        print("config.get(distance_file)",config.get("distance_file", ""))
         distance_map = _load_distance_map(config.get("distance_file", ""))
-        print(f"distance map is {distance_map}")
-        print(f"config {config}")
         distance = distance_map.get(self.cid)
-        print(f"distance {distance}")
         if distance is None:   # fallback if ID not present
             dmin = config.get("communication_distance_min", 5)
             dmax = config.get("communication_distance_max", 20)
             # Choose a random distance within the provided range.
             distance = random.uniform(dmin, dmax)
-            print(f"distance format {distance}")
-        
+            
         
         # Calculate communication cost.
         comm_cost = energy_comm_cost(new_params, energy_per_bit, distance)
