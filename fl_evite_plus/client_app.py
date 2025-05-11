@@ -1,107 +1,104 @@
-"""fl-evite-plus: A Flower / sklearn app."""
+# fl_evite_plus/client_app.py
 
-
-import warnings, random, csv, os
-from pathlib import Path
-from functools import lru_cache
+import random
+import warnings
+from typing import Dict, Tuple, List
 
 from sklearn.metrics import log_loss
 
-from flwr.client import ClientApp, NumPyClient
-from flwr.common import Context
+from flwr.client import NumPyClient, ClientApp
+from flwr.common import NDArrays, Scalar, Parameters
+
 from fl_evite_plus.task import (
+    load_data,
     get_model,
     get_model_params,
-    load_data,
-    set_initial_params,
     set_model_params,
+    set_initial_params,
 )
-from fl_evite_plus.comm_cost import energy_comm_cost  # Our energy cost function
-
-#@lru_cache(maxsize=1)
-def _load_distance_map(csv_path: str):
-    print(f"csv_path {csv_path}")
-    mapping = {}
-    if csv_path and Path(csv_path).exists():
-        with open(csv_path, newline="") as fh:
-            for row in csv.DictReader(fh):
-                mapping[int(row["client_id"])] = float(row["distance_m"])
-    return mapping
+from fl_evite_plus.server_app import load_tree_with_weights, all_nodes
 
 
 class FlowerClient(NumPyClient):
-    def __init__(self, model, X_train, X_test, y_train, y_test,cid):
+    def __init__(self, model, Xtr, Xte, ytr, yte, cid: int):
         self.model = model
-        self.X_train = X_train
-        self.X_test = X_test
-        self.y_train = y_train
-        self.y_test = y_test
+        self.X_train, self.X_test = Xtr, Xte
+        self.y_train, self.y_test = ytr, yte
         self.cid = cid
 
-    def fit(self, parameters, config):
+    # ---------- FIT ------------------------------------------------------ #
+    def fit(
+        self,
+        parameters: Parameters,
+        config: Dict[str, Scalar],
+    ) -> Tuple[List[NDArrays], int, Dict[str, Scalar]]:
+        print(f"[CLIENT-{self.cid}] Running fit")
+        # 1. unpack & set
         set_model_params(self.model, parameters)
 
-        # Simulate communication error with probability communication_error_rate
-        error_rate = config.get("communication_error_rate", 0.0)
-        if random.random() < error_rate:
-            raise Exception("Simulated communication error in fit")
-
-
-        new_params = get_model_params(self.model)
-        
-        # Retrieve energy and distance parameters from config with defaults as fallback.
-        energy_per_bit = config.get("communication_energy_per_bit", 0.0001)
-
-        distance_map = _load_distance_map(config.get("distance_file", ""))
-        distance = distance_map.get(self.cid)
-        if distance is None:   # fallback if ID not present
-            dmin = config.get("communication_distance_min", 5)
-            dmax = config.get("communication_distance_max", 20)
-            # Choose a random distance within the provided range.
-            distance = random.uniform(dmin, dmax)
-            
-        
-        # Calculate communication cost.
-        comm_cost = energy_comm_cost(new_params, energy_per_bit, distance)
-
-        # Ignore convergence warnings due to low local epochs
+        # 2. train
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.model.fit(self.X_train, self.y_train)
 
-        # Return the updated parameters and metrics including the communication cost and chosen distance.
-        return new_params, len(self.X_train), {"comm_cost": comm_cost, "distance": distance}
+        # 3. return exactly (params, num_examples, metrics)
+        return (
+            get_model_params(self.model),     # type: ignore[list]
+            len(self.X_train),
+            {"cid": self.cid},         # must include cid
+        )
 
-    def evaluate(self, parameters, config):
+    # ---------- EVALUATE ------------------------------------------------- #
+    def evaluate(
+        self,
+        parameters: Parameters,
+        config: Dict[str, Scalar],
+    ) -> Tuple[float, int, Dict[str, Scalar]]:
+        # 1. unpack & set
         set_model_params(self.model, parameters)
 
-        # Optionally simulate communication error in evaluation as well.
-        error_rate = config.get("communication_error_rate", 0.0)
-        if random.random() < error_rate:
-            raise Exception("Simulated communication error in evaluate")
-
+        # 2. measure
         loss = log_loss(self.y_test, self.model.predict_proba(self.X_test))
-        accuracy = self.model.score(self.X_test, self.y_test)
+        acc = self.model.score(self.X_test, self.y_test)
 
-        return loss, len(self.X_test), {"accuracy": accuracy}
+        # 3. return exactly (loss, num_examples, metrics)
+        return (
+            float(loss),
+            len(self.X_test),
+            {"cid": self.cid, "accuracy": float(acc)},
+        )
 
+class DummyClient(NumPyClient):
+    def __init__(self, cid, dummy_params):
+        self.cid = cid
+        self.dummy_params = dummy_params
 
-def client_fn(context: Context):
-    cid= context.node_config["partition-id"]
-    num_partitions = context.node_config["num-partitions"]
+    def get_parameters(self, config): return self.dummy_params
+    def fit(self, parameters, config): return self.dummy_params, 0, {"cid": self.cid}
+    def evaluate(self, parameters, config): return 0.0, 0, {"cid": self.cid}
 
-    X_train, X_test, y_train, y_test = load_data(cid, num_partitions)
+# ---------------- client_fn --------------------------------------------- #
+def client_fn(context):
+    cid = context.node_config["partition-id"]
+    n_parts = context.node_config["num-partitions"]
 
-    # Create LogisticRegression Model based on configuration parameters
-    penalty = context.run_config["penalty"]
-    local_epochs = context.run_config["local-epochs"]
-    model = get_model(penalty, local_epochs)
-
-    # Initialize model parameters
+    model = get_model(context.run_config["penalty"], context.run_config["local-epochs"])
     set_initial_params(model)
+    dummy_params = get_model_params(model)
 
-    return FlowerClient(model, X_train, X_test, y_train, y_test, cid).to_client()
+    # Optional: enforce client is part of the aggregation tree
+    tree = load_tree_with_weights(context.run_config["mst_file"])
+    valid_ids = all_nodes(tree) - {0}
+    if cid not in valid_ids:
+        print(f"[INFO] Skipping client {cid} – not in aggregation tree.")
+        return DummyClient(cid, dummy_params).to_client()
+
+    Xtr, Xte, ytr, yte = load_data(cid, n_parts)
+    mdl = get_model(context.run_config["penalty"], context.run_config["local-epochs"])
+    set_initial_params(mdl)
+
+    return FlowerClient(mdl, Xtr, Xte, ytr, yte, cid).to_client()
 
 
-# Register Flower ClientApp
+# Register with Flower
 app = ClientApp(client_fn=client_fn)

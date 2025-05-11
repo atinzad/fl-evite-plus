@@ -11,6 +11,9 @@ dependencies = [
     "flwr[simulation]>=1.16.0",
     "flwr-datasets[vision]>=0.5.0",
     "scikit-learn>=1.6.1",
+    "networkx>=3.4.2",
+    "pandas>=2.2.3",
+    "matplotlib>=3.10.1",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -28,8 +31,9 @@ num-server-rounds = 3
 penalty = "l2"
 local-epochs = 1
 communication_energy_per_bit = 0.0001  # Energy per bit (adjustable)
-communication_distance_min = 5         # Minimum communication distance (adjustable)
-communication_distance_max = 20        # Maximum communication distance (adjustable)
+communication_distance_min = 0.0         # Minimum communication distance (adjustable)
+communication_distance_max = 100        # Maximum communication distance (adjustable)
+mst_file = "mst.json" 
 fraction_fit = 1.0                     # Fraction of clients to participate in training
 fraction_evaluate = 1.0                # Fraction of clients to participate in evaluation
 communication_error_rate = 0.0         # Probability of simulated communication failure (10%)

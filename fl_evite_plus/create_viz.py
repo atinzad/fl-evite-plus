@@ -49,15 +49,40 @@ def draw_directed_graph(node_positions, graph, output_path="directed_graph.png",
     plt.close()
     print(f"[✓] Directed graph saved to {output_path}")
 
+# def main():
+#     csv_path = "../iot_nodes.csv"
+#     json_path = "../tree_config_01_7_2_3.json"  # path to your directed tree JSON
+#     output_image_path = "../directed_graph.png"
+#     show_edges = True
+
+#     node_positions = load_nodes(csv_path)
+#     graph = load_graph(json_path)
+#     draw_directed_graph(node_positions, graph, output_path=output_image_path, show_edges=show_edges)
+
 def main():
     csv_path = "../iot_nodes.csv"
-    json_path = "../mst.json"  # path to your directed tree JSON
-    output_image_path = "../directed_graph.png"
+    trees_dir = "../generated_trees"
+    output_dir = "../generated_images"
     show_edges = True
 
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Load node positions once
     node_positions = load_nodes(csv_path)
-    graph = load_graph(json_path)
-    draw_directed_graph(node_positions, graph, output_path=output_image_path, show_edges=show_edges)
+
+    # Loop over all JSON files in the tree directory
+    for filename in os.listdir(trees_dir):
+        if filename.endswith(".json"):
+            json_path = os.path.join(trees_dir, filename)
+            graph = load_graph(json_path)
+
+            output_filename = os.path.splitext(filename)[0] + ".png"
+            output_image_path = os.path.join(output_dir, output_filename)
+
+            draw_directed_graph(node_positions, graph, output_path=output_image_path, show_edges=show_edges, title=filename)
 
 if __name__ == "__main__":
     main()
+
+

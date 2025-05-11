@@ -4,9 +4,17 @@ import numpy as np
 from flwr_datasets import FederatedDataset
 from flwr_datasets.partitioner import IidPartitioner
 from sklearn.linear_model import LogisticRegression
+from flwr.common import Parameters, parameters_to_ndarrays
 
 fds = None  # Cache FederatedDataset
 
+def load_full_test_data(num_parts: int = 10):
+    X_all, y_all = [], []
+    for pid in range(num_parts):
+        _, X_test, _, y_test = load_data(pid, num_parts)
+        X_all.append(X_test)
+        y_all.append(y_test)
+    return np.vstack(X_all), np.concatenate(y_all)
 
 def load_data(partition_id: int, num_partitions: int):
     """Load partition MNIST data."""
@@ -50,11 +58,32 @@ def get_model_params(model):
     return params
 
 
+
+
 def set_model_params(model, params):
-    model.coef_ = params[0]
+    """Unwrap and safely set coef_ and intercept_, so warm_start works."""
+
+    # 1) Convert Flower Parameters → list of ndarrays
+    if isinstance(params, Parameters):
+        ndarrays = parameters_to_ndarrays(params)
+    else:
+        ndarrays = params  # assume already list of np.ndarrays
+
+    # 2) Pull out coef and intercept
+    coef = np.array(ndarrays[0])
+    if coef.ndim == 1:
+        CLS = len(model.classes_)
+        F = coef.shape[0] // CLS
+        coef = coef.reshape((CLS, F))
+    model.coef_ = coef
+
+    # 3) Intercept (if any)
     if model.fit_intercept:
-        model.intercept_ = params[1]
+        intercept = np.array(ndarrays[1]).reshape(-1)
+        model.intercept_ = intercept
+
     return model
+
 
 
 def set_initial_params(model):
