@@ -1,0 +1,54 @@
+Success
+INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
+INFO :      
+INFO :      [INIT]
+INFO :      Using initial global parameters provided by strategy
+INFO :      Starting evaluation of initial global parameters
+INFO :      initial parameters (loss, other metrics): 2.3025850929940455, {'centralized_accuracy': 0.0995}
+INFO :      
+INFO :      [ROUND 1]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (1, 1.0080089232945242, {'centralized_accuracy': 0.7211666666666666}, 12.135247890022583)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 2]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (2, 0.6597387125739803, {'centralized_accuracy': 0.8075}, 15.622016326989979)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 3]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (3, 0.6263596845438625, {'centralized_accuracy': 0.8268333333333333}, 19.20389221201185)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [SUMMARY]
+INFO :      Run finished 3 round(s) in 19.73s
+INFO :          History (loss, distributed):
+INFO :                  round 1: 0.0
+INFO :                  round 2: 0.0
+INFO :                  round 3: 0.0
+INFO :          History (loss, centralized):
+INFO :                  round 0: 2.3025850929940455
+INFO :                  round 1: 1.0080089232945242
+INFO :                  round 2: 0.6597387125739803
+INFO :                  round 3: 0.6263596845438625
+INFO :          History (metrics, distributed, fit):
+INFO :          {'round_total_energy': [(1, 58101.324096000004),
+INFO :                                  (2, 58101.324096000004),
+INFO :                                  (3, 58101.324096000004)]}
+INFO :          History (metrics, distributed, evaluate):
+INFO :          {'round_avg_accuracy': [(1, 0.2835510441800483),
+INFO :                                  (2, 0.3167484815708462),
+INFO :                                  (3, 0.32606706048756134)]}
+INFO :          History (metrics, centralized):
+INFO :          {'centralized_accuracy': [(0, 0.0995),
+INFO :                                    (1, 0.7211666666666666),
+INFO :                                    (2, 0.8075),
+INFO :                                    (3, 0.8268333333333333)]}
+INFO :    

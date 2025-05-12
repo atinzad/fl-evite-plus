@@ -14,6 +14,7 @@ dependencies = [
     "networkx>=3.4.2",
     "pandas>=2.2.3",
     "matplotlib>=3.10.1",
+    "numpy>=2.2.3",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -27,13 +28,13 @@ serverapp = "fl_evite_plus.server_app:app"
 clientapp = "fl_evite_plus.client_app:app"
 
 [tool.flwr.app.config]
-num-server-rounds = 3
+num-server-rounds = 10
 penalty = "l2"
 local-epochs = 1
 communication_energy_per_bit = 0.0001  # Energy per bit (adjustable)
 communication_distance_min = 0.0         # Minimum communication distance (adjustable)
 communication_distance_max = 100        # Maximum communication distance (adjustable)
-mst_file = "mst.json" 
+mst_file = "generated_trees/tree_config_05_10_1_2.json"
 fraction_fit = 1.0                     # Fraction of clients to participate in training
 fraction_evaluate = 1.0                # Fraction of clients to participate in evaluation
 communication_error_rate = 0.0         # Probability of simulated communication failure (10%)
@@ -44,4 +45,4 @@ distance_file = "client_distances.csv"   # Path (relative or absolute)
 default = "local-simulation"
 
 [tool.flwr.federations.local-simulation]
-options.num-supernodes = 100
+options.num-supernodes = 101

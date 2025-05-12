@@ -32,7 +32,6 @@ class FlowerClient(NumPyClient):
         parameters: Parameters,
         config: Dict[str, Scalar],
     ) -> Tuple[List[NDArrays], int, Dict[str, Scalar]]:
-        print(f"[CLIENT-{self.cid}] Running fit")
         # 1. unpack & set
         set_model_params(self.model, parameters)
 
@@ -90,7 +89,6 @@ def client_fn(context):
     tree = load_tree_with_weights(context.run_config["mst_file"])
     valid_ids = all_nodes(tree) - {0}
     if cid not in valid_ids:
-        print(f"[INFO] Skipping client {cid} – not in aggregation tree.")
         return DummyClient(cid, dummy_params).to_client()
 
     Xtr, Xte, ytr, yte = load_data(cid, n_parts)

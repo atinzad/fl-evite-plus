@@ -1,0 +1,111 @@
+Loading project configuration... 
+Success
+INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
+INFO :      
+INFO :      [INIT]
+INFO :      Using initial global parameters provided by strategy
+INFO :      Starting evaluation of initial global parameters
+INFO :      initial parameters (loss, other metrics): 2.3025850929940455, {'centralized_accuracy': 0.0995}
+INFO :      
+INFO :      [ROUND 1]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (1, 1.0655234319821794, {'centralized_accuracy': 0.7074166666666667}, 12.398473349050619)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 2]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (2, 0.6865473782753432, {'centralized_accuracy': 0.79425}, 15.778582438011654)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 3]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (3, 0.6343590528961219, {'centralized_accuracy': 0.8265}, 19.3972886611009)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [SUMMARY]
+INFO :      Run finished 3 round(s) in 20.04s
+INFO :          History (loss, distributed):
+INFO :                  round 1: 0.0
+INFO :                  round 2: 0.0
+INFO :                  round 3: 0.0
+INFO :          History (loss, centralized):
+INFO :                  round 0: 2.3025850929940455
+INFO :                  round 1: 1.0655234319821794
+INFO :                  round 2: 0.6865473782753432
+INFO :                  round 3: 0.6343590528961219
+INFO :          History (metrics, distributed, fit):
+INFO :          {'round_total_energy': [(1, 23127.245472000002),
+INFO :                                  (2, 23127.245472000002),
+INFO :                                  (3, 23127.245472000002)]}
+INFO :          History (metrics, distributed, evaluate):
+INFO :          {'round_avg_accuracy': [(1, 0.2810549962559281),
+INFO :                                  (2, 0.31217239370995925),
+INFO :                                  (3, 0.3273150844496215)]}
+INFO :          History (metrics, centralized):
+INFO :          {'centralized_accuracy': [(0, 0.0995),
+INFO :                                    (1, 0.7074166666666667),
+INFO :                                    (2, 0.79425),
+INFO :                                    (3, 0.8265)]}
+INFO :      
+(fl-evite-plus) atinzad@Ahmad-P16-Gen2:~/fl-evite-plus$ flwr run .
+Loading project configuration... 
+Success
+INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
+INFO :      
+INFO :      [INIT]
+INFO :      Using initial global parameters provided by strategy
+INFO :      Starting evaluation of initial global parameters
+INFO :      initial parameters (loss, other metrics): 2.3025850929940455, {'centralized_accuracy': 0.0995}
+INFO :      
+INFO :      [ROUND 1]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (1, 1.095667556358853, {'centralized_accuracy': 0.7065}, 12.724327752948739)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 2]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (2, 0.6840667287365901, {'centralized_accuracy': 0.7961666666666667}, 16.202367212972604)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 3]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (3, 0.6369384631415941, {'centralized_accuracy': 0.8259166666666666}, 19.624085066025145)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [SUMMARY]
+INFO :      Run finished 3 round(s) in 20.23s
+INFO :          History (loss, distributed):
+INFO :                  round 1: 0.0
+INFO :                  round 2: 0.0
+INFO :                  round 3: 0.0
+INFO :          History (loss, centralized):
+INFO :                  round 0: 2.3025850929940455
+INFO :                  round 1: 1.095667556358853
+INFO :                  round 2: 0.6840667287365901
+INFO :                  round 3: 0.6369384631415941
+INFO :          History (metrics, distributed, fit):
+INFO :          {'round_total_energy': [(1, 22921.603103999998),
+INFO :                                  (2, 22921.603103999998),
+INFO :                                  (3, 22921.603103999998)]}
+INFO :          History (metrics, distributed, evaluate):
+INFO :          {'round_avg_accuracy': [(1, 0.347949080622348),
+INFO :                                  (2, 0.39162991929445046),
+INFO :                                  (3, 0.4083534403860554)]}
+INFO :          History (metrics, centralized):
+INFO :          {'centralized_accuracy': [(0, 0.0995),
+INFO :                                    (1, 0.7065),
+INFO :                                    (2, 0.7961666666666667),
+INFO :                                    (3, 0.8259166666666666)]}
+INFO :  

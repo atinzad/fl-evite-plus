@@ -1,0 +1,57 @@
+Loading project configuration... 
+Success
+INFO :      Starting Flower ServerApp, config: num_rounds=3, no round_timeout
+INFO :      
+INFO :      [INIT]
+INFO :      Using initial global parameters provided by strategy
+INFO :      Starting evaluation of initial global parameters
+Using the latest cached version of the dataset since mnist couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'mnist' at /home/atinzad/.cache/huggingface/datasets/mnist/mnist/0.0.0/77f3279092a1c1579b2250db8eafed0ad422088c (last modified on Fri Mar 14 15:38:33 2025).
+INFO :      initial parameters (loss, other metrics): 2.3025850929940455, {'centralized_accuracy': 0.0995}
+INFO :      
+INFO :      [ROUND 1]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (1, 1.0839530875236145, {'centralized_accuracy': 0.7014166666666667}, 12.938710709102452)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 2]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (2, 0.6765702445361989, {'centralized_accuracy': 0.8030833333333334}, 16.654890528065152)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [ROUND 3]
+INFO :      configure_fit: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_fit: received 101 results and 0 failures
+INFO :      fit progress: (3, 0.6389739100029885, {'centralized_accuracy': 0.8273333333333334}, 20.298667160095647)
+INFO :      configure_evaluate: strategy sampled 101 clients (out of 101)
+INFO :      aggregate_evaluate: received 101 results and 0 failures
+INFO :      
+INFO :      [SUMMARY]
+INFO :      Run finished 3 round(s) in 20.84s
+INFO :          History (loss, distributed):
+INFO :                  round 1: 0.0
+INFO :                  round 2: 0.0
+INFO :                  round 3: 0.0
+INFO :          History (loss, centralized):
+INFO :                  round 0: 2.3025850929940455
+INFO :                  round 1: 1.0839530875236145
+INFO :                  round 2: 0.6765702445361989
+INFO :                  round 3: 0.6389739100029885
+INFO :          History (metrics, distributed, fit):
+INFO :          {'round_total_energy': [(1, 27621.303904),
+INFO :                                  (2, 27621.303904),
+INFO :                                  (3, 27621.303904)]}
+INFO :          History (metrics, distributed, evaluate):
+INFO :          {'round_avg_accuracy': [(1, 0.27714452117480654),
+INFO :                                  (2, 0.3159996671936101),
+INFO :                                  (3, 0.3271486812546801)]}
+INFO :          History (metrics, centralized):
+INFO :          {'centralized_accuracy': [(0, 0.0995),
+INFO :                                    (1, 0.7014166666666667),
+INFO :                                    (2, 0.8030833333333334),
+INFO :                                    (3, 0.8273333333333334)]}
+INFO :      

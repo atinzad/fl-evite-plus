@@ -7,8 +7,11 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Set
 
+import os
+
 import numpy as np
 import ray
+import warnings
 
 from fl_evite_plus.task import get_model, set_model_params, load_data, load_full_test_data
 from sklearn.metrics import accuracy_score, log_loss
@@ -69,19 +72,32 @@ class HierarchicalStrategy(Strategy):
         self.base = base
         self.e_bit = energy_per_bit
         self.valid_cids = all_nodes(weight_tree) - {0}
+        self.cid_to_uuid: Dict[int, str] = {}  # Maps logical cid → Flower UUID
 
     def initialize_parameters(self, client_manager) -> Optional[Parameters]:
         return self.base.initialize_parameters(client_manager)
-
+    
     def configure_fit(
         self,
         server_round: int,
         parameters: Parameters,
         client_manager,
     ) -> List[Tuple[ClientProxy, FitIns]]:
-        clients = list(client_manager.all().values())  # Dict[str, ClientProxy] → [ClientProxy]
-        fit_ins = FitIns(parameters, {})
-        return [(c, fit_ins) for c in clients]
+        all_clients = client_manager.all()  # Dict[str, ClientProxy]
+        #all_clients = list(client_manager.all().values())  # Dict[str, ClientProxy] → [ClientProxy]
+        
+        if server_round == 1:
+            # Round 1: allow all clients, no filtering
+            return [(c, FitIns(parameters, {})) for c in all_clients.values()]
+        
+        # Round >1: select only clients whose cid is in the MST
+        selected_clients = [
+            (all_clients[uuid], FitIns(parameters, {}))
+            for cid, uuid in self.cid_to_uuid.items()
+            if cid in self.valid_cids and uuid in all_clients
+        ]
+        return selected_clients
+
 
 
     def configure_evaluate(
@@ -90,9 +106,18 @@ class HierarchicalStrategy(Strategy):
         parameters: Parameters,
         client_manager,
     ) -> List[Tuple[ClientProxy, EvaluateIns]]:
-        clients = list(client_manager.all().values())
-        eval_ins = EvaluateIns(parameters, {})
-        return [(c, eval_ins) for c in clients]
+        all_clients = client_manager.all()
+        
+        if server_round == 1:
+            return [(c, EvaluateIns(parameters, {})) for c in all_clients.values()]
+        
+        selected_clients = [
+            (all_clients[uuid], EvaluateIns(parameters, {}))
+            for cid, uuid in self.cid_to_uuid.items()
+            if cid in self.valid_cids and uuid in all_clients
+        ]
+        return selected_clients
+
 
 
 
@@ -112,6 +137,8 @@ class HierarchicalStrategy(Strategy):
             cid = fit_res.metrics.get("cid")
             if cid is None:
                 raise ValueError("Missing 'cid' in FitRes.metrics")
+            
+            self.cid_to_uuid[int(cid)] = client_proxy.cid
             mapping[int(cid)] = (nds, n_examples)
         return mapping
 
@@ -198,6 +225,11 @@ class HierarchicalStrategy(Strategy):
         y_pred = model.predict(X_test)
         y_proba = model.predict_proba(X_test)
 
+        # NEW GUARD: check for NaNs or bad values
+        if np.isnan(y_proba).any() or np.isinf(y_proba).any():
+            warnings.warn("NaN or Inf detected in predictions. Skipping evaluation.")
+            return float("nan"), {"centralized_accuracy": 0.0}
+
         loss = log_loss(y_test, y_proba)
         acc = accuracy_score(y_test, y_pred)
 
@@ -210,6 +242,9 @@ class HierarchicalStrategy(Strategy):
 # --------------------------------------------------------------------------- #
 def server_fn(context: Context) -> ServerAppComponents:
     cfg = context.run_config
+    # Allow override from environment
+    if "MST_FILE" in os.environ:
+        cfg["mst_file"] = os.environ["MST_FILE"]
     tree = load_tree_with_weights(cfg["mst_file"])
     num_clients = len(all_nodes(tree))
 
