@@ -1,4 +1,4 @@
-"""fl-evite-plus: A Flower / sklearn app."""
+# fl_evite_plus/task.py
 
 import os
 import random
@@ -7,7 +7,7 @@ import json
 import numpy as np
 from flwr_datasets import FederatedDataset
 from flwr_datasets.partitioner import IidPartitioner
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import SGDClassifier
 from flwr.common import Parameters, parameters_to_ndarrays
 
 # ── GLOBALS ───────────────────────────────────────────────────────────────────
@@ -24,23 +24,20 @@ if os.path.isfile(LABEL_ASSIGNMENTS_LOG):
 def get_client_labels(cid: int, k: int, seed: int = 42) -> list[int]:
     """
     Return exactly k distinct MNIST labels (0–9) for client `cid`.
-    - Uses random.seed(cid + seed) for reproducibility per client.
-    - If no assignment yet exists on disk for this cid, pick a new sample of size k.
-    - Save the entire {cid → labels} map to LABEL_ASSIGNMENTS_LOG.
+    Uses random.seed(cid + seed) for reproducibility per client.
+    If no assignment exists on disk for this cid and k, pick a new sample of size k,
+    then save to LABEL_ASSIGNMENTS_LOG.
     """
     global label_assignments
 
-    # Include k in the key so that changing “labels-per-client” yields a new assignment
     key = f"{cid}-{k}"
     if key in label_assignments:
         return label_assignments[key]
 
-    # Sample k distinct labels from 0..9
     random.seed(cid + seed)
     chosen_labels = sorted(random.sample(range(10), k))
     label_assignments[key] = chosen_labels
 
-    # Persist the updated mapping to disk
     with open(LABEL_ASSIGNMENTS_LOG, "w") as f:
         json.dump(label_assignments, f, indent=2)
 
@@ -50,24 +47,19 @@ def get_client_labels(cid: int, k: int, seed: int = 42) -> list[int]:
 def load_full_test_data(num_parts: int = 10):
     """
     Stack together each partition’s TEST set into one big (X_all, y_all).
-    Each client’s load_data(...) filters to k labels, so the combined test
-    may be missing some digits. In server.evaluate(...), pass labels=range(10)
-    to log_loss to avoid class‐count errors.
+    We pass allowed_labels=list(range(10)) to get the full unfiltered test.
     """
     X_all, y_all = [], []
     for pid in range(num_parts):
-        # We need to call load_data with a dummy k; server uses only y_test and X_test for eval,
-        # but context.run_config provides the real k at runtime. Here, use k=10 so that
-        # load_data(pid, num_parts, 10) returns the full partition unfiltered.
-        _, X_test, _, y_test = load_data(pid, num_parts, k=10)
+        _, X_test, _, y_test = load_data(pid, num_parts, allowed_labels=list(range(10)))
         X_all.append(X_test)
         y_all.append(y_test)
     return np.vstack(X_all), np.concatenate(y_all)
 
 
-def load_data(partition_id: int, num_partitions: int, k: int):
+def load_data(partition_id: int, num_partitions: int, allowed_labels: list[int]):
     """
-    Load partitioned MNIST data, then filter so that this client only sees its k assigned labels.
+    Load partitioned MNIST data, then filter so that this client only sees its allowed_labels.
     Returns:
         X_train_filtered, X_test_filtered, y_train_filtered, y_test_filtered
     """
@@ -91,38 +83,41 @@ def load_data(partition_id: int, num_partitions: int, k: int):
     X_train_full, X_test_full = X[:split_idx], X[split_idx:]
     y_train_full, y_test_full = y[:split_idx], y[split_idx:]
 
-    # 4) Get exactly k labels for this client
-    allowed_labels = get_client_labels(partition_id, k)
-
-    # 5) Build boolean masks to keep only those k digits
+    # 4) Build boolean masks to keep only those allowed_labels
     train_mask = np.isin(y_train_full, allowed_labels)
-    test_mask = np.isin(y_test_full, allowed_labels)
+    test_mask  = np.isin(y_test_full,  allowed_labels)
 
-    # 6) Apply masks
+    # 5) Apply masks
     X_train_filtered = X_train_full[train_mask]
     y_train_filtered = y_train_full[train_mask]
-    X_test_filtered = X_test_full[test_mask]
-    y_test_filtered = y_test_full[test_mask]
+    X_test_filtered  = X_test_full[test_mask]
+    y_test_filtered  = y_test_full[test_mask]
 
     return X_train_filtered, X_test_filtered, y_train_filtered, y_test_filtered
 
 
 def get_model(penalty: str, local_epochs: int):
     """
-    Returns a fresh LogisticRegression with warm_start=True.
-    We’ll overwrite coef_ and intercept_ later via set_initial_params / set_model_params.
+    Return a fresh SGDClassifier configured for “logistic regression” (i.e. FedProx‐style).
+    We use partial_fit(...) with classes=np.arange(10) below, so the coefficient matrix
+    will always remain shape (10, 784).
     """
-    return LogisticRegression(
+    # Note: “loss='log_loss'”⇒ standard logistic regression; warm_start is automatic for partial_fit
+    return SGDClassifier(
+        loss="log_loss",
         penalty=penalty,
-        max_iter=local_epochs,
-        warm_start=True,
+        max_iter=1,       # We’ll call partial_fit local_epochs times manually
+        learning_rate="optimal",
+        tol=None,
+        random_state=42,
     )
 
 
 def get_model_params(model):
     """
     Extract model parameters as a list of ndarrays.
-    If fit_intercept=True, return [coef_, intercept_], else [coef_].
+    For SGDClassifier, coef_.shape = (n_classes=10, n_features=784).
+    If intercept_ exists, return [coef_, intercept_].
     """
     if model.fit_intercept:
         return [model.coef_, model.intercept_]
@@ -141,15 +136,10 @@ def set_model_params(model, params):
 
     # 1) Extract coef
     coef = np.array(ndarrays[0])
-    if coef.ndim == 1:
-        # If flattened, reshape to (n_classes, n_features)
-        CLS = len(model.classes_)
-        F = coef.shape[0] // CLS
-        coef = coef.reshape((CLS, F))
     model.coef_ = coef
 
     # 2) Extract intercept if needed
-    if model.fit_intercept:
+    if model.fit_intercept and len(ndarrays) > 1:
         intercept = np.array(ndarrays[1]).reshape(-1)
         model.intercept_ = intercept
 
@@ -158,14 +148,17 @@ def set_model_params(model, params):
 
 def set_initial_params(model):
     """
-    Initialize a new model with:
-      - classes_ = array([0,1,…,9])
+    Initialize a new SGDClassifier so that:
       - coef_ = zeros((10, 784))
       - intercept_ = zeros((10,)) if fit_intercept=True
+    We also set `classes_` explicitly for use in partial_fit.
     """
     n_classes = 10
     n_features = 784
-    model.classes_ = np.arange(n_classes, dtype=int)
+
+    # Create a zero‐matrix for coef_ and intercept_
     model.coef_ = np.zeros((n_classes, n_features))
     if model.fit_intercept:
         model.intercept_ = np.zeros((n_classes,))
+    # We do NOT need to set model.classes_ manually; partial_fit(...) will accept classes=range(10).
+    return model

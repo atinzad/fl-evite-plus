@@ -58,7 +58,7 @@ def main():
     #(w_cost, w_depth, w_degree)
     
 
-    CONFIGS = [[40],[20,1],[10,3],[10,2,1], [10,1,2]]
+    CONFIGS = [[1]]
 
     os.makedirs("../generated_trees", exist_ok=True)
 

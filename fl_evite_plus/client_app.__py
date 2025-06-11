@@ -1,0 +1,87 @@
+# fl_evite_plus/client_app.py
+
+import random
+import warnings
+from typing import Dict, Tuple, List
+
+import numpy as np
+from sklearn.metrics import log_loss
+
+from flwr.client import NumPyClient, ClientApp
+from flwr.common import NDArrays, Scalar, Parameters
+
+from fl_evite_plus.task import (
+    load_data,
+    get_model,
+    get_model_params,
+    set_model_params,
+    set_initial_params,
+    get_client_labels,
+)
+from fl_evite_plus.server_app import load_tree_with_weights, all_nodes
+
+
+class FlowerClient(NumPyClient):
+    def __init__(self, model, Xtr, Xte, ytr, yte, cid: int):
+        self.model = model
+        self.X_train, self.X_test = Xtr, Xte
+        self.y_train, self.y_test = ytr, yte
+        self.cid = cid
+
+    # ---------- FIT ------------------------------------------------------ #
+    def fit(
+        self,
+        parameters: Parameters,
+        config: Dict[str, Scalar],
+    ) -> Tuple[List[NDArrays], int, Dict[str, Scalar]]:
+        # 1. unpack & set
+        set_model_params(self.model, parameters)
+
+        # 2. “local_epochs” rounds of partial_fit
+        local_epochs = int(config.get("local_epochs", 1))
+        for _ in range(local_epochs):
+            # We always call partial_fit with all 10 classes
+            self.model.partial_fit(self.X_train, self.y_train, classes=np.arange(10))
+
+        # 3. return exactly (params, num_examples, metrics)
+        return (
+            get_model_params(self.model),     # type: ignore[list]
+            len(self.X_train),
+            {"cid": self.cid},         # must include cid
+        )
+
+    # ---------- EVALUATE ------------------------------------------------- #
+    def evaluate(
+        self,
+        parameters: Parameters,
+        config: Dict[str, Scalar],
+    ) -> Tuple[float, int, Dict[str, Scalar]]:
+        # 1. unpack & set
+        set_model_params(self.model, parameters)
+
+        # 2. measure
+        # NOTE: log_loss requires “labels=…” if some classes missing, but our model always covers all 10.
+        loss = log_loss(self.y_test, self.model.predict_proba(self.X_test), labels=np.arange(10))
+        acc = self.model.score(self.X_test, self.y_test)
+
+        # 3. return exactly (loss, num_examples, metrics)
+        return (
+            float(loss),
+            len(self.X_test),
+            {"cid": self.cid, "accuracy": float(acc)},
+        )
+
+
+class DummyClient(NumPyClient):
+    def __init__(self, cid, dummy_params):
+        self.cid = cid
+        self.dummy_params = dummy_params
+
+    def get_parameters(self, config):
+        return self.dummy_params
+
+    def fit(self, parameters, config):
+        return self.dummy_params, 0, {"cid": self.cid}
+
+    def evaluate(self, parameters, config):
+        return 0.0, 0

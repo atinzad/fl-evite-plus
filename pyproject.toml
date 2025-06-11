@@ -28,13 +28,14 @@ serverapp = "fl_evite_plus.server_app:app"
 clientapp = "fl_evite_plus.client_app:app"
 
 [tool.flwr.app.config]
+labels-per-client = 7
 num-server-rounds = 10
 penalty = "l2"
-local-epochs = 1
+local-epochs = 5
 communication_energy_per_bit = 0.0001  # Energy per bit (adjustable)
 communication_distance_min = 0.0         # Minimum communication distance (adjustable)
 communication_distance_max = 100        # Maximum communication distance (adjustable)
-mst_file = "generated_trees/tree_config_05_10_1_2.json"
+mst_file = "generated_trees/tree_config_01_5_3_2_1.json"
 fraction_fit = 1.0                     # Fraction of clients to participate in training
 fraction_evaluate = 1.0                # Fraction of clients to participate in evaluation
 communication_error_rate = 0.0         # Probability of simulated communication failure (10%)
