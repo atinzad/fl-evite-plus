@@ -146,8 +146,8 @@ def client_fn(context):
 
     # 4) Load the client’s data, passing in k so load_data filters exactly k labels
     Xtr, Xte, ytr, yte = load_data(cid, n_parts, k)
-    #allowed_labels = get_client_labels(cid, k)
-    allowed_labels = get_client_labels(cid, k, round_number=server_round)
+    allowed_labels = get_client_labels(cid, k)
+    #allowed_labels = get_client_labels(cid, k, round_number=server_round)
 
     # 5) If this client has no training examples, return DummyClient
     if Xtr.shape[0] == 0 or ytr.shape[0] == 0:

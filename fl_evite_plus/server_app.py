@@ -150,7 +150,12 @@ class HierarchicalStrategy(Strategy):
 
         # Recurse into children
         for child in self.tree.get(node, {}):
-            child_params, child_n, child_e = self._aggregate_subtree(child, node, updates)
+            #child_params, child_n, child_e = self._aggregate_subtree(child, node, updates)
+            try:
+                child_params, child_n, child_e = self._aggregate_subtree(child, node, updates)
+            except ValueError:
+                # no updates in that branch → skip it
+                continue
             triplets.append((child_params, child_n, child_e))
 
         # If this node itself is a client leaf, include its own update
@@ -162,9 +167,10 @@ class HierarchicalStrategy(Strategy):
                 energy = self.e_bit * (dist**2) * param_bits(params) #energy model
             triplets.append((params, n, energy))
 
+        # If after pruning children & no self‐update, bail out
         if not triplets:
             raise ValueError(f"No update for node {node}")
-
+        
         # 1) Compute a weighted FedAvg of all (params, n) in this subtree
         weight_tuples = [(p[0], n) for (p, n, _) in triplets]
         agg_weights = aggregate(weight_tuples)
